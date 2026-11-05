@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TITANFIT COACH OS | Panel de Gestión para Personal Trainer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neon: '#a3e635',
+                        neonHover: '#84cc16',
+                        darkBg: '#09090b',
+                        cardBg: '#141417',
+                        panelBg: '#18181b'
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { background-color: #09090b; color: #ffffff; font-family: 'Inter', sans-serif; }
+        .neon-text { color: #a3e635; text-shadow: 0 0 18px rgba(163, 230, 53, 0.3); }
+        .neon-button {
+            background-color: #a3e635; color: #09090b;
+            box-shadow: 0 0 20px rgba(163, 230, 53, 0.3);
+            transition: all 0.2s ease;
+        }
+        .neon-button:hover { background-color: #bef264; box-shadow: 0 0 28px rgba(163, 230, 53, 0.5); }
+        .cyber-card {
+            background: linear-gradient(145deg, rgba(28, 28, 34, 0.92) 0%, rgba(16, 16, 20, 0.98) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .cyber-card-neon {
+            background: linear-gradient(135deg, rgba(163, 230, 53, 0.12) 0%, rgba(20, 20, 24, 0.96) 70%);
+            border: 1px solid rgba(163, 230, 53, 0.35);
+        }
+        .titan-grid-bg {
+            background-size: 24px 24px;
+            background-image: 
+                linear-gradient(to right, rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.025) 1px, transparent 1px);
+        }
+        .input-dark {
+            background-color: #09090b;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            transition: border-color 0.2s ease;
+        }
+        .input-dark:focus {
+            border-color: #a3e635;
+            outline: none;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col lg:flex-row bg-darkBg titan-grid-bg antialiased selection:bg-neon selection:text-black">
+
+    <!-- SIDEBAR DE NAVEGACIÓN (ESCRITORIO) & HEADER MÓVIL -->
+    <aside class="w-full lg:w-72 bg-zinc-950/95 border-b lg:border-b-0 lg:border-r border-white/10 flex flex-col justify-between shrink-0 z-30">
+        <div>
+            <!-- Brand Header -->
+            <div class="p-5 border-b border-white/10 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-neon text-black flex items-center justify-center font-black text-xl shadow">
+                        <i class="ph-fill ph-barbell"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-black text-base tracking-wider uppercase">TITAN<span class="neon-text">FIT</span></span>
+                            <span class="px-1.5 py-0.5 text-[9px] font-black bg-neon/15 text-neon border border-neon/40 rounded">COACH OS</span>
+                        </div>
+                        <span class="text-[11px] text-gray-400 block">Centro de Mando del Entrenador</span>
+                    </div>
+                </div>
+                <div id="syncStatusIndicator" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Cloud Live</span>
+                </div>
+            </div>
+
+            <!-- Selector de Alumno Activo -->
+            <div class="p-4 border-b border-white/10 bg-white/[0.02]">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-[10px] font-black uppercase tracking-wider text-neon">Alumno Seleccionado</label>
+                    <button onclick="openNewStudentModal()" class="text-[10px] font-bold text-gray-300 hover:text-neon flex items-center gap-1">
+                        <i class="ph-bold ph-plus-circle text-neon"></i> Nuevo
+                    </button>
+                </div>
+                <select id="studentSelector" onchange="selectStudent(this.value)" class="w-full input-dark rounded-xl px-3 py-2.5 text-xs font-bold">
+                    <option value="TF-000100">Alumno Demo (#TF-000100)</option>
+                </select>
+                <p class="text-[10px] text-gray-500 mt-2 flex items-center gap-1">
+                    <i class="ph-fill ph-broadcast text-neon"></i>
+                    Sincronizado en vivo con <code class="text-gray-300">app.html</code>
+                </p>
+            </div>
+
+            <!-- Menú de Módulos del Entrenador -->
+            <nav class="p-3 flex lg:flex-col gap-1.5 overflow-x-auto no-scrollbar">
+                <button onclick="switchCoachSection('perfil')" id="tabBtn-perfil" class="coach-nav-btn flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold bg-neon text-black shrink-0 transition-all">
+                    <i class="ph-fill ph-Sliders text-lg"></i>
+                    <span>1. Perfil & HUD Alumno</span>
+                </button>
+                <button onclick="switchCoachSection('rutinas')" id="tabBtn-rutinas" class="coach-nav-btn flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 shrink-0 transition-all">
+                    <i class="ph-fill ph-barbell text-lg"></i>
+                    <span>2. Editor Splits A/B/C/D</span>
+                </button>
+                <button onclick="switchCoachSection('bioscan')" id="tabBtn-bioscan" class="coach-nav-btn flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 shrink-0 transition-all">
+                    <i class="ph-fill ph-scan text-lg"></i>
+                    <span>3. BioScan & Perímetros</span>
+                </button>
+                <button onclick="switchCoachSection('pagos')" id="tabBtn-pagos" class="coach-nav-btn flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 shrink-0 transition-all">
+                    <i class="ph-fill ph-credit-card text-lg"></i>
+                    <span>4. Cuotas & Membresía</span>
+                </button>
+                <button onclick="switchCoachSection('prospectos')" id="tabBtn-prospectos" class="coach-nav-btn flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 shrink-0 transition-all">
+                    <div class="flex items-center gap-3">
+                        <i class="ph-fill ph-users-three text-lg"></i>
+                        <span>5. Prospectos Landing</span>
+                    </div>
+                    <span id="leadsCountBadge" class="px-1.5 py-0.5 rounded-md bg-neon/20 text-neon text-[10px] font-black">0</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Botón de Guardado Global en Sidebar -->
+        <div class="p-4 border-t border-white/10 hidden lg:block space-y-2">
+            <button onclick="saveCurrentStudentToCloud()" id="sidebarSaveBtn" class="w-full py-3.5 px-4 rounded-xl neon-button font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+                <i class="ph-bold ph-cloud-arrow-up text-lg"></i> Guardar y Sincronizar
+            </button>
+            <p class="text-[10px] text-center text-gray-500">Impacta al instante en la App del Alumno</p>
+        </div>
+    </aside>
+
+    <!-- ÁREA DE TRABAJO PRINCIPAL -->
+    <main class="flex-1 flex flex-col min-w-0 pb-24 lg:pb-10">
+        
+        <!-- Barra Superior de Resumen Rápido del Alumno -->
+        <header class="bg-zinc-950/80 backdrop-blur-md border-b border-white/10 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
+            <div class="flex items-center gap-3.5">
+                <div id="topStudentAvatar" class="w-11 h-11 rounded-2xl bg-neon text-black font-black flex items-center justify-center text-sm shadow">
+                    AD
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 id="topStudentName" class="text-lg font-black uppercase text-white">Alumno Demo</h1>
+                        <span id="topStudentIdBadge" class="px-2 py-0.5 rounded bg-white/10 text-gray-300 font-mono text-[11px]">#TF-000100</span>
+                        <span id="topPaymentPill" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px] uppercase">Cuota al Día</span>
+                    </div>
+                    <p id="topStudentSub" class="text-xs text-gray-400">Objetivo: Hipertrofia & Fuerza • Split recomendado hoy: <strong class="text-neon">SPLIT A</strong></p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="resetDemoStudent()" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-300 transition-all">
+                    Restaurar Valores Demo
+                </button>
+                <button onclick="saveCurrentStudentToCloud()" class="px-5 py-2.5 rounded-xl neon-button font-black text-xs uppercase tracking-wider flex items-center gap-2">
+                    <i class="ph-bold ph-floppy-disk text-base"></i> Guardar Cambios
+                </button>
+            </div>
+        </header>
+
+        <!-- Contenedor de Secciones -->
+        <div class="p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto space-y-6">
+
+            <!-- =================================================================== -->
+            <!-- SECCIÓN 1: PERFIL DEL ALUMNO, HUD & DIRECTIVA DEL ENTRENADOR        -->
+            <!-- =================================================================== -->
+            <section id="coachSec-perfil" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-neon">Módulo 01 • Configuración General</span>
+                        <h2 class="text-2xl font-black uppercase">Datos del Alumno & HUD Táctico</h2>
+                    </div>
+                    <span class="text-xs text-gray-400">Todo lo que modifiques aquí cambia la portada de <code class="text-neon">app.html</code></span>
+                </div>
+
+                <!-- Directiva del Coach (Destacada) -->
+                <div class="cyber-card-neon rounded-3xl p-6 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <i class="ph-fill ph-megaphone text-neon text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-black uppercase text-white">Directiva del Coach (Nota Fijada en el Inicio del Alumno)</h3>
+                                <p class="text-xs text-gray-300">Este mensaje aparece arriba de todo apenas el alumno abre su aplicación.</p>
+                            </div>
+                        </div>
+                        <div class="hidden sm:flex gap-1.5">
+                            <button type="button" onclick="setQuickDirective('Priorizar técnica y control excéntrico de 3 segundos en Prensa y Sentadilla Hack. Mantener hidratación alta.')" class="px-2.5 py-1 rounded-lg bg-black/50 hover:bg-black border border-white/15 text-[10px] font-semibold text-gray-300">Plantilla Hipertrofia</button>
+                            <button type="button" onclick="setQuickDirective('Semana de sobrecarga progresiva: subir 2.5 kg en básicos manteniendo RIR 1-2. No olvidar los 5g de creatina.')" class="px-2.5 py-1 rounded-lg bg-black/50 hover:bg-black border border-white/15 text-[10px] font-semibold text-gray-300">Plantilla Fuerza</button>
+                            <button type="button" onclick="setQuickDirective('Semana de descarga activa: reducir cargas un 15% y priorizar movilidad articular y sueño.')" class="px-2.5 py-1 rounded-lg bg-black/50 hover:bg-black border border-white/15 text-[10px] font-semibold text-gray-300">Plantilla Descarga</button>
+                        </div>
+                    </div>
+                    <textarea id="inpCoachDirective" rows="2" class="w-full input-dark rounded-2xl p-3.5 text-sm text-white leading-relaxed" placeholder="Escribe la indicación semanal o diaria para el alumno..."></textarea>
+                </div>
+
+                <!-- Formulario de Identidad y Parámetros del HUD -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Identidad y Plan -->
+                    <div class="cyber-card rounded-3xl p-6 space-y-4">
+                        <h3 class="text-xs font-black uppercase tracking-wider text-neon flex items-center gap-2">
+                            <i class="ph-bold ph-identification-badge text-base"></i> Identidad y Categoría
+                        </h3>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Nombre Completo</label>
+                                <input type="text" id="inpStudentName" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-bold" placeholder="Alumno Demo">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Iniciales Avatar</label>
+                                <input type="text" id="inpStudentInitials" maxlength="3" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-black text-center uppercase" placeholder="AD">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Matrícula ID</label>
+                                <input type="text" id="inpStudentId" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-mono text-gray-300" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Nivel Asignado</label>
+                                <select id="inpStudentLevel" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-bold">
+                                    <option value="NV. 01">NV. 01 (Inicial)</option>
+                                    <option value="NV. 02">NV. 02 (Intermedio)</option>
+                                    <option value="NV. 03">NV. 03 (Avanzado)</option>
+                                    <option value="ELITE">ELITE (Competidor)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Plan Contratado</label>
+                                <input type="text" id="inpStudentPlan" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm" placeholder="Plan Personalizado">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Objetivo Principal</label>
+                                <input type="text" id="inpStudentGoal" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm" placeholder="Hipertrofia & Fuerza">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Métricas del HUD Inicio -->
+                    <div class="cyber-card rounded-3xl p-6 space-y-4">
+                        <h3 class="text-xs font-black uppercase tracking-wider text-neon flex items-center gap-2">
+                            <i class="ph-bold ph-gauge text-base"></i> Indicadores del HUD Táctico
+                        </h3>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Batería Corporal / SNC (%)</label>
+                                <input type="number" id="inpRecoveryPct" min="10" max="100" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-black text-neon" placeholder="92">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Estado SNC (Subtítulo)</label>
+                                <input type="text" id="inpRecoveryStatus" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm" placeholder="SNC Óptimo para Sobrecarga">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Sesiones Completadas (Mes)</label>
+                                <input type="number" id="inpSessionsDone" min="0" max="31" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Meta de Sesiones (Mes)</label>
+                                <input type="number" id="inpSessionsTarget" min="1" max="31" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-bold">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Meta Diaria de Agua (Litros)</label>
+                                <input type="number" step="0.25" id="inpWaterTarget" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Split Recomendado Hoy</label>
+                                <select id="inpRecommendedSplit" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-black text-neon">
+                                    <option value="A">SPLIT A (Piernas / Cuádriceps)</option>
+                                    <option value="B">SPLIT B (Pecho / Hombro / Bíceps)</option>
+                                    <option value="C">SPLIT C (Cadena Posterior / Hack)</option>
+                                    <option value="D">SPLIT D (Espalda / Tríceps)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =================================================================== -->
+            <!-- SECCIÓN 2: CONSTRUCTOR Y EDITOR DE RUTINAS (SPLITS A / B / C / D)   -->
+            <!-- =================================================================== -->
+            <section id="coachSec-rutinas" class="hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-neon">Módulo 02 • Prescripción de Entrenamiento</span>
+                        <h2 class="text-2xl font-black uppercase">Editor de Splits A / B / C / D</h2>
+                    </div>
+
+                    <!-- Selector de Split a Editar -->
+                    <div class="flex bg-zinc-900 p-1.5 rounded-2xl border border-white/10 gap-1">
+                        <button onclick="selectSplitToEdit('A')" id="splitEditTab-A" class="px-4 py-2 rounded-xl text-xs font-black bg-neon text-black transition-all">SPLIT A</button>
+                        <button onclick="selectSplitToEdit('B')" id="splitEditTab-B" class="px-4 py-2 rounded-xl text-xs font-black text-gray-400 hover:text-white transition-all">SPLIT B</button>
+                        <button onclick="selectSplitToEdit('C')" id="splitEditTab-C" class="px-4 py-2 rounded-xl text-xs font-black text-gray-400 hover:text-white transition-all">SPLIT C</button>
+                        <button onclick="selectSplitToEdit('D')" id="splitEditTab-D" class="px-4 py-2 rounded-xl text-xs font-black text-gray-400 hover:text-white transition-all">SPLIT D</button>
+                    </div>
+                </div>
+
+                <!-- Cabecera del Split Activo -->
+                <div class="cyber-card rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="w-full sm:w-2/3">
+                        <label class="block text-[10px] font-bold uppercase text-neon mb-1">Nombre del Día / Enfoque Muscular</label>
+                        <input type="text" id="inpSplitTitle" onchange="updateActiveSplitTitle(this.value)" class="w-full input-dark rounded-xl px-4 py-2.5 text-base font-black text-white">
+                    </div>
+                    <button onclick="addNewExerciseToSplit()" class="w-full sm:w-auto px-4 py-3 rounded-xl bg-neon/15 hover:bg-neon/25 border border-neon/40 text-neon font-black text-xs uppercase flex items-center justify-center gap-2 transition-all">
+                        <i class="ph-bold ph-plus-circle text-base"></i> Agregar Ejercicio al Split
+                    </button>
+                </div>
+
+                <!-- Lista Editable de Ejercicios del Split -->
+                <div id="coachExercisesEditorList" class="space-y-4"></div>
+            </section>
+
+            <!-- =================================================================== -->
+            <!-- SECCIÓN 3: LABORATORIO BIOSCAN (INBODY) & PERÍMETROS MUSCULARES     -->
+            <!-- =================================================================== -->
+            <section id="coachSec-bioscan" class="hidden space-y-6">
+                <div class="border-b border-white/10 pb-4">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-neon">Módulo 03 • Evaluación Antropométrica</span>
+                    <h2 class="text-2xl font-black uppercase">Laboratorio TitanScan & Perímetros</h2>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Medición Actual -->
+                    <div class="cyber-card-neon rounded-3xl p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-black uppercase text-neon">Medición Actual (Control Vigente)</h3>
+                            <span class="px-2 py-0.5 rounded bg-neon text-black font-black text-[10px]">ACTIVO</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-300 uppercase mb-1">Peso Corporal</label>
+                                <input type="text" id="inpScanCurWeight" class="w-full input-dark rounded-xl px-3.5 py-2 text-sm font-bold" placeholder="78.4 kg">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-300 uppercase mb-1">Etiqueta Progreso</label>
+                                <input type="text" id="inpScanCurDelta" class="w-full input-dark rounded-xl px-3.5 py-2 text-sm font-bold text-neon" placeholder="+2.4 kg Músculo">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-300 uppercase mb-1">Masa Muscular</label>
+                                <input type="text" id="inpScanCurMuscle" class="w-full input-dark rounded-xl px-3.5 py-2 text-sm font-mono" placeholder="38.2 kg">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-300 uppercase mb-1">% Grasa Corporal</label>
+                                <input type="text" id="inpScanCurFat" class="w-full input-dark rounded-xl px-3.5 py-2 text-sm font-mono" placeholder="13.8 %">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-[11px] font-bold text-gray-300 uppercase mb-1">Agua Intracelular / Hidratación</label>
+                                <input type="text" id="inpScanCurWater" class="w-full input-dark rounded-xl px-3.5 py-2 text-sm font-mono" placeholder="62.5 %">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medición Día 1 (Línea Base para Comparación) -->
+                    <div class="cyber-card rounded-3xl p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-black uppercase text-white">Medición Día 1 (Línea Base Inicial)</h3>
+                            <span class="px-2 py-0.5 rounded bg-white/10 text-gray-300 font-bold text-[10px]">HISTÓRICO</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Peso Inicial</label>
+                                <input type="text" id="inpScanIniWeight" class="w-full input-dark rounded-xl px-3.5 py-2 text-sm font-bold" placeholder="77.0 kg">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Etiqueta Base</label>
+                                <input type="text" id="inpScanIniDelta" class="w-full input-dark rounded-xl px-3.5 py-2 text-sm" placeholder="Línea Base">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Masa Muscular Día 1</label>
+                                <input type="text" id="inpScanIniMuscle" class="w-full input-dark rounded-xl px-3.5 py-2 text-sm font-mono" placeholder="35.8 kg">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">% Grasa Día 1</label>
+                                <input type="text" id="inpScanIniFat" class="w-full input-dark rounded-xl px-3.5 py-2 text-sm font-mono" placeholder="17.5 %">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Agua Intracelular Día 1</label>
+                                <input type="text" id="inpScanIniWater" class="w-full input-dark rounded-xl px-3.5 py-2 text-sm font-mono" placeholder="58.0 %">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Perímetros Antropométricos -->
+                <div class="cyber-card rounded-3xl p-6 space-y-4">
+                    <h3 class="text-xs font-black uppercase tracking-wider text-neon flex items-center gap-2">
+                        <i class="ph-bold ph-ruler text-base"></i> Perímetros Musculares (Centímetros)
+                    </h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Brazo Contraído</label>
+                            <input type="text" id="inpPerimArm" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold" placeholder="40.5 cm">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Torso / Pecho</label>
+                            <input type="text" id="inpPerimChest" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold" placeholder="106.0 cm">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Cintura</label>
+                            <input type="text" id="inpPerimWaist" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold" placeholder="79.0 cm">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Muslo Medio</label>
+                            <input type="text" id="inpPerimThigh" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold" placeholder="61.5 cm">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =================================================================== -->
+            <!-- SECCIÓN 4: CONTROL DE CUOTAS, PAGOS Y MEMBRESÍA                     -->
+            <!-- =================================================================== -->
+            <section id="coachSec-pagos" class="hidden space-y-6">
+                <div class="border-b border-white/10 pb-4">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-neon">Módulo 04 • Administración & Finanzas</span>
+                    <h2 class="text-2xl font-black uppercase">Estado de Cuota y Membresía</h2>
+                </div>
+
+                <div class="cyber-card rounded-3xl p-6 space-y-5 max-w-2xl">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Estado de la Cuota</label>
+                            <select id="inpPaymentStatus" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-bold">
+                                <option value="CUOTA AL DÍA">CUOTA AL DÍA (Acceso Habilitado)</option>
+                                <option value="PAGO PENDIENTE">PAGO PENDIENTE (Aviso en App)</option>
+                                <option value="MEMBRESÍA VENCIDA">MEMBRESÍA VENCIDA</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Próximo Vencimiento</label>
+                            <input type="text" id="inpPaymentDueDate" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm font-mono" placeholder="Día 10 del próximo mes">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">Medio de Pago Registrado</label>
+                            <input type="text" id="inpPaymentMethod" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm" placeholder="Transferencia / Efectivo">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="button" onclick="markFeeAsPaidNow()" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-black text-xs uppercase transition-all flex items-center justify-center gap-2">
+                                <i class="ph-bold ph-check-circle text-base"></i> Marcar Cuota Pagada Hoy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =================================================================== -->
+            <!-- SECCIÓN 5: BANDEJA DE PROSPECTOS (CONECTADA A LA LANDING PAGE)      -->
+            <!-- =================================================================== -->
+            <section id="coachSec-prospectos" class="hidden space-y-6">
+                <div class="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-neon">Módulo 05 • CRM de Captación</span>
+                        <h2 class="text-2xl font-black uppercase">Solicitudes desde la Landing Page</h2>
+                    </div>
+                    <span class="text-xs text-gray-400">Puedes convertir cualquier prospecto en un alumno con ficha propia en 1 clic.</span>
+                </div>
+
+                <div class="cyber-card rounded-3xl overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-zinc-900/90 border-b border-white/10 text-[10px] font-black uppercase text-gray-400">
+                                <th class="py-3.5 px-5">Fecha</th>
+                                <th class="py-3.5 px-5">Prospecto</th>
+                                <th class="py-3.5 px-5">Contacto</th>
+                                <th class="py-3.5 px-5">Objetivo Seleccionado</th>
+                                <th class="py-3.5 px-5 text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coachLeadsTableBody" class="divide-y divide-white/5 text-xs">
+                            <tr>
+                                <td colspan="5" class="py-8 text-center text-gray-500">Sincronizando prospectos con la nube...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- MODAL PARA DAR DE ALTA UN NUEVO ALUMNO -->
+    <div id="newStudentModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="cyber-card rounded-3xl p-6 max-w-md w-full space-y-4 border border-neon/40">
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-neon font-black uppercase tracking-wider">Alta de Nuevo Alumno</span>
+                <button onclick="closeNewStudentModal()" class="text-gray-400 hover:text-white"><i class="ph-bold ph-x text-lg"></i></button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Nombre y Apellido</label>
+                    <input type="text" id="newStudName" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm" placeholder="Ej. Sofía Martínez">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Objetivo Asignado</label>
+                    <input type="text" id="newStudGoal" class="w-full input-dark rounded-xl px-3.5 py-2.5 text-sm" placeholder="Recomposición & Glúteos">
+                </div>
+            </div>
+            <button onclick="createNewStudentProfile()" class="w-full py-3 rounded-xl neon-button font-black text-xs uppercase tracking-wider">
+                Crear Ficha y Asignar Splits A/B/C/D
+            </button>
+        </div>
+    </div>
+
+    <!-- TOAST DE CONFIRMACIÓN -->
+    <div id="coachToast" class="hidden fixed bottom-6 right-6 z-50 bg-zinc-900 border-2 border-neon text-white px-5 py-3.5 rounded-2xl text-xs font-bold shadow-2xl flex items-center gap-2.5">
+        <i class="ph-fill ph-check-circle text-neon text-lg"></i>
+        <span id="coachToastText">Cambios sincronizados</span>
+    </div>
+
+    <!-- LÓGICA COMPLETA DEL ENTRENADOR + SINCRONIZACIÓN FIREBASE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'demo-pt-app';
+        const fallbackConfig = { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : fallbackConfig;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // ============================================================================
+        // PLANTILLA BASE DE ALUMNO DEMO (Idéntica a la estructura de app.html)
+        // ============================================================================
+        function getDefaultStudentTemplate(id = "TF-000100", name = "Alumno Demo", goal = "Hipertrofia & Fuerza") {
+            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'AD';
+            return {
+                id,
+                name,
+                initials,
+                level: "NV. 01",
+                plan: "Plan Personalizado",
+                goal,
+                coachDirective: "Priorizar técnica y control excéntrico de 3 segundos en Prensa y Sentadilla Hack. Mantener hidratación alta.",
+                recoveryPct: 92,
+                recoveryStatus: "SNC Óptimo para Sobrecarga",
+                sessionsDone: 8,
+                sessionsTarget: 20,
+                waterTarget: 3.0,
+                recommendedSplit: "A",
+                paymentStatus: "CUOTA AL DÍA",
+                paymentDueDate: "Día 10 del próximo mes",
+                paymentMethod: "Tarjeta Demo •••• 0000",
+                perimeters: {
+                    arm: "40.5 cm",
+                    chest: "106.0 cm",
+                    waist: "79.0 cm",
+                    thigh: "61.5 cm"
+                },
+                scans: {
+                    current: {
+                        label: "Medición Actual • Control Mensual",
+                        weight: "78.4 kg",
+                        delta: "+2.4 kg Músculo",
+                        muscle: "38.2 kg",
+                        musclePct: "84%",
+                        fat: "13.8 %",
+                        fatPct: "32%",
+                        water: "62.5 %",
+                        waterPct: "78%"
+                    },
+                    initial: {
+                        label: "Medición Día 1 • Ingreso",
+                        weight: "77.0 kg",
+                        delta: "Línea Base",
+                        muscle: "35.8 kg",
+                        musclePct: "68%",
+                        fat: "17.5 %",
+                        fatPct: "52%",
+                        water: "58.0 %",
+                        waterPct: "65%"
+                    }
+                },
+                routines: {
+                    'A': {
+                        title: 'Lower Torque (Cuádriceps & Glúteo)',
+                        exercises: [
+                            { id: 'a1', name: 'Leg Press 45° (Prensa Inclinada)', rest: 60, sets: [{kg: 120, reps: 12, done: false}, {kg: 140, reps: 12, done: false}, {kg: 150, reps: 10, done: false}] },
+                            { id: 'a2', name: 'Hip Thrust (Elevación de Cadera)', rest: 60, sets: [{kg: 80, reps: 12, done: false}, {kg: 90, reps: 12, done: false}, {kg: 100, reps: 10, done: false}] },
+                            { id: 'a3', name: 'Sillón de Cuádriceps (Leg Extension)', rest: 45, sets: [{kg: 55, reps: 15, done: false}, {kg: 60, reps: 12, done: false}, {kg: 65, reps: 12, done: false}] },
+                            { id: 'a4', name: 'Estocada Búlgara con Mancuernas', rest: 60, sets: [{kg: 20, reps: 12, done: false}, {kg: 24, reps: 10, done: false}, {kg: 24, reps: 10, done: false}] },
+                            { id: 'a5', name: 'Gemelos Sentado en Máquina', rest: 45, sets: [{kg: 45, reps: 15, done: false}, {kg: 50, reps: 15, done: false}, {kg: 50, reps: 15, done: false}] },
+                            { id: 'a6', name: 'Sentadilla en Multipower (Smith)', rest: 60, sets: [{kg: 70, reps: 12, done: false}, {kg: 80, reps: 10, done: false}, {kg: 85, reps: 10, done: false}] }
+                        ]
+                    },
+                    'B': {
+                        title: 'Upper Hypertrophy (Pecho, Hombro & Bíceps)',
+                        exercises: [
+                            { id: 'b1', name: 'Press de Banca Plano con Barra', rest: 60, sets: [{kg: 60, reps: 12, done: false}, {kg: 70, reps: 10, done: false}, {kg: 75, reps: 8, done: false}] },
+                            { id: 'b2', name: 'Press Inclinado con Mancuernas', rest: 60, sets: [{kg: 24, reps: 12, done: false}, {kg: 28, reps: 10, done: false}, {kg: 28, reps: 10, done: false}] },
+                            { id: 'b3', name: 'Pectoral Fly (Aperturas en Máquina)', rest: 45, sets: [{kg: 50, reps: 15, done: false}, {kg: 55, reps: 12, done: false}, {kg: 55, reps: 12, done: false}] },
+                            { id: 'b4', name: 'Press Militar con Mancuernas', rest: 60, sets: [{kg: 20, reps: 12, done: false}, {kg: 22, reps: 10, done: false}, {kg: 22, reps: 10, done: false}] },
+                            { id: 'b5', name: 'Jalón al Pecho Agarre Supino', rest: 60, sets: [{kg: 55, reps: 12, done: false}, {kg: 60, reps: 12, done: false}, {kg: 65, reps: 10, done: false}] },
+                            { id: 'b6', name: 'Curl de Bíceps en Banco Scott', rest: 45, sets: [{kg: 25, reps: 12, done: false}, {kg: 30, reps: 10, done: false}, {kg: 30, reps: 10, done: false}] }
+                        ]
+                    },
+                    'C': {
+                        title: 'Posterior Chain (Isquios, Aductores & Hack)',
+                        exercises: [
+                            { id: 'c1', name: 'Sentadilla Hack Inclinada', rest: 60, sets: [{kg: 90, reps: 12, done: false}, {kg: 100, reps: 10, done: false}, {kg: 110, reps: 10, done: false}] },
+                            { id: 'c2', name: 'Peso Muerto Rumano con Barra', rest: 60, sets: [{kg: 80, reps: 12, done: false}, {kg: 90, reps: 10, done: false}, {kg: 95, reps: 10, done: false}] },
+                            { id: 'c3', name: 'Camilla Femorales (Leg Curl)', rest: 45, sets: [{kg: 45, reps: 15, done: false}, {kg: 50, reps: 12, done: false}, {kg: 55, reps: 10, done: false}] },
+                            { id: 'c4', name: 'Abductor de Cadera en Máquina', rest: 45, sets: [{kg: 50, reps: 15, done: false}, {kg: 55, reps: 15, done: false}, {kg: 60, reps: 12, done: false}] },
+                            { id: 'c5', name: 'Aductor de Cadera en Máquina', rest: 45, sets: [{kg: 50, reps: 15, done: false}, {kg: 55, reps: 15, done: false}, {kg: 60, reps: 12, done: false}] },
+                            { id: 'c6', name: 'Elevación de Gemelos de Pie', rest: 45, sets: [{kg: 60, reps: 15, done: false}, {kg: 65, reps: 15, done: false}, {kg: 70, reps: 12, done: false}] }
+                        ]
+                    },
+                    'D': {
+                        title: 'Back Density & Triceps Lockout',
+                        exercises: [
+                            { id: 'd1', name: 'Tirón Frontal en Polea Alta', rest: 60, sets: [{kg: 60, reps: 12, done: false}, {kg: 65, reps: 10, done: false}, {kg: 70, reps: 10, done: false}] },
+                            { id: 'd2', name: 'Remo Sentado en Máquina Hammer', rest: 60, sets: [{kg: 70, reps: 12, done: false}, {kg: 75, reps: 10, done: false}, {kg: 80, reps: 10, done: false}] },
+                            { id: 'd3', name: 'Remo Bajo en Polea Unilateral', rest: 45, sets: [{kg: 25, reps: 12, done: false}, {kg: 30, reps: 12, done: false}, {kg: 30, reps: 10, done: false}] },
+                            { id: 'd4', name: 'Pull-Over en Polea Alta con Barra', rest: 45, sets: [{kg: 35, reps: 15, done: false}, {kg: 40, reps: 12, done: false}, {kg: 40, reps: 12, done: false}] },
+                            { id: 'd5', name: 'Fondos en Paralelas / Máquina Tríceps', rest: 60, sets: [{kg: 65, reps: 12, done: false}, {kg: 70, reps: 10, done: false}, {kg: 75, reps: 10, done: false}] },
+                            { id: 'd6', name: 'Extensión de Tríceps en Polea Alta', rest: 45, sets: [{kg: 25, reps: 15, done: false}, {kg: 30, reps: 12, done: false}, {kg: 30, reps: 12, done: false}] }
+                        ]
+                    }
+                }
+            };
+        }
+
+        // Diccionario de Alumnos en Memoria + Sincronizado con Firestore
+        let STUDENTS_DB = {
+            "TF-000100": getDefaultStudentTemplate("TF-000100", "Alumno Demo", "Hipertrofia & Fuerza")
+        };
+        let currentStudentId = "TF-000100";
+        let currentEditingSplit = "A";
+        let isCloudReady = false;
+
+        // ============================================================================
+        // CARGA Y RENDERIZADO DE DATOS EN LOS FORMULARIOS DEL ENTRENADOR
+        // ============================================================================
+        function loadStudentIntoForm(studentId) {
+            const s = STUDENTS_DB[studentId];
+            if (!s) return;
+
+            // Header superior
+            document.getElementById('topStudentAvatar').textContent = s.initials || 'AD';
+            document.getElementById('topStudentName').textContent = s.name;
+            document.getElementById('topStudentIdBadge').textContent = `#${s.id}`;
+            document.getElementById('topPaymentPill').textContent = s.paymentStatus;
+            document.getElementById('topStudentSub').innerHTML = `Objetivo: ${s.goal} • Split recomendado hoy: <strong class="text-neon">SPLIT ${s.recommendedSplit || 'A'}</strong>`;
+
+            // Sección 1: Perfil & HUD
+            document.getElementById('inpCoachDirective').value = s.coachDirective || '';
+            document.getElementById('inpStudentName').value = s.name || '';
+            document.getElementById('inpStudentInitials').value = s.initials || 'AD';
+            document.getElementById('inpStudentId').value = s.id || 'TF-000100';
+            document.getElementById('inpStudentLevel').value = s.level || 'NV. 01';
+            document.getElementById('inpStudentPlan').value = s.plan || '';
+            document.getElementById('inpStudentGoal').value = s.goal || '';
+            document.getElementById('inpRecoveryPct').value = s.recoveryPct ?? 92;
+            document.getElementById('inpRecoveryStatus').value = s.recoveryStatus || 'SNC Óptimo para Sobrecarga';
+            document.getElementById('inpSessionsDone').value = s.sessionsDone ?? 8;
+            document.getElementById('inpSessionsTarget').value = s.sessionsTarget ?? 20;
+            document.getElementById('inpWaterTarget').value = s.waterTarget ?? 3.0;
+            document.getElementById('inpRecommendedSplit').value = s.recommendedSplit || 'A';
+
+            // Sección 2: Rutinas
+            renderSplitEditor();
+
+            // Sección 3: BioScan & Perímetros
+            document.getElementById('inpScanCurWeight').value = s.scans?.current?.weight || '78.4 kg';
+            document.getElementById('inpScanCurDelta').value = s.scans?.current?.delta || '+2.4 kg Músculo';
+            document.getElementById('inpScanCurMuscle').value = s.scans?.current?.muscle || '38.2 kg';
+            document.getElementById('inpScanCurFat').value = s.scans?.current?.fat || '13.8 %';
+            document.getElementById('inpScanCurWater').value = s.scans?.current?.water || '62.5 %';
+
+            document.getElementById('inpScanIniWeight').value = s.scans?.initial?.weight || '77.0 kg';
+            document.getElementById('inpScanIniDelta').value = s.scans?.initial?.delta || 'Línea Base';
+            document.getElementById('inpScanIniMuscle').value = s.scans?.initial?.muscle || '35.8 kg';
+            document.getElementById('inpScanIniFat').value = s.scans?.initial?.fat || '17.5 %';
+            document.getElementById('inpScanIniWater').value = s.scans?.initial?.water || '58.0 %';
+
+            document.getElementById('inpPerimArm').value = s.perimeters?.arm || '40.5 cm';
+            document.getElementById('inpPerimChest').value = s.perimeters?.chest || '106.0 cm';
+            document.getElementById('inpPerimWaist').value = s.perimeters?.waist || '79.0 cm';
+            document.getElementById('inpPerimThigh').value = s.perimeters?.thigh || '61.5 cm';
+
+            // Sección 4: Pagos
+            document.getElementById('inpPaymentStatus').value = s.paymentStatus || 'CUOTA AL DÍA';
+            document.getElementById('inpPaymentDueDate').value = s.paymentDueDate || 'Día 10 del próximo mes';
+            document.getElementById('inpPaymentMethod').value = s.paymentMethod || 'Tarjeta Demo •••• 0000';
+        }
+
+        function collectFormDataIntoStudent() {
+            const s = STUDENTS_DB[currentStudentId];
+            if (!s) return;
+
+            s.coachDirective = document.getElementById('inpCoachDirective').value.trim();
+            s.name = document.getElementById('inpStudentName').value.trim() || 'Alumno Demo';
+            s.initials = (document.getElementById('inpStudentInitials').value.trim() || 'AD').toUpperCase();
+            s.level = document.getElementById('inpStudentLevel').value;
+            s.plan = document.getElementById('inpStudentPlan').value.trim();
+            s.goal = document.getElementById('inpStudentGoal').value.trim();
+            s.recoveryPct = Number(document.getElementById('inpRecoveryPct').value) || 92;
+            s.recoveryStatus = document.getElementById('inpRecoveryStatus').value.trim();
+            s.sessionsDone = Number(document.getElementById('inpSessionsDone').value) || 0;
+            s.sessionsTarget = Number(document.getElementById('inpSessionsTarget').value) || 20;
+            s.waterTarget = Number(document.getElementById('inpWaterTarget').value) || 3.0;
+            s.recommendedSplit = document.getElementById('inpRecommendedSplit').value;
+
+            s.scans.current.weight = document.getElementById('inpScanCurWeight').value.trim();
+            s.scans.current.delta = document.getElementById('inpScanCurDelta').value.trim();
+            s.scans.current.muscle = document.getElementById('inpScanCurMuscle').value.trim();
+            s.scans.current.fat = document.getElementById('inpScanCurFat').value.trim();
+            s.scans.current.water = document.getElementById('inpScanCurWater').value.trim();
+
+            s.scans.initial.weight = document.getElementById('inpScanIniWeight').value.trim();
+            s.scans.initial.delta = document.getElementById('inpScanIniDelta').value.trim();
+            s.scans.initial.muscle = document.getElementById('inpScanIniMuscle').value.trim();
+            s.scans.initial.fat = document.getElementById('inpScanIniFat').value.trim();
+            s.scans.initial.water = document.getElementById('inpScanIniWater').value.trim();
+
+            s.perimeters = {
+                arm: document.getElementById('inpPerimArm').value.trim(),
+                chest: document.getElementById('inpPerimChest').value.trim(),
+                waist: document.getElementById('inpPerimWaist').value.trim(),
+                thigh: document.getElementById('inpPerimThigh').value.trim()
+            };
+
+            s.paymentStatus = document.getElementById('inpPaymentStatus').value;
+            s.paymentDueDate = document.getElementById('inpPaymentDueDate').value.trim();
+            s.paymentMethod = document.getElementById('inpPaymentMethod').value.trim();
+        }
+
+        // ============================================================================
+        // CONSTRUCTOR DE RUTINAS (SPLITS A / B / C / D)
+        // ============================================================================
+        window.selectSplitToEdit = function(splitKey) {
+            currentEditingSplit = splitKey;
+            ['A', 'B', 'C', 'D'].forEach(k => {
+                const btn = document.getElementById(`splitEditTab-${k}`);
+                if (k === splitKey) {
+                    btn.className = 'px-4 py-2 rounded-xl text-xs font-black bg-neon text-black transition-all';
+                } else {
+                    btn.className = 'px-4 py-2 rounded-xl text-xs font-black text-gray-400 hover:text-white transition-all';
+                }
+            });
+            renderSplitEditor();
+        };
+
+        function renderSplitEditor() {
+            const s = STUDENTS_DB[currentStudentId];
+            const splitObj = s.routines[currentEditingSplit];
+            document.getElementById('inpSplitTitle').value = splitObj.title || '';
+
+            const container = document.getElementById('coachExercisesEditorList');
+            container.innerHTML = '';
+
+            splitObj.exercises.forEach((ex, exIdx) => {
+                let setsHtml = '';
+                ex.sets.forEach((setItem, setIdx) => {
+                    setsHtml += `
+                        <div class="grid grid-cols-12 gap-2 items-center bg-black/40 p-2 rounded-xl border border-white/5 text-xs">
+                            <div class="col-span-2 font-mono font-bold text-gray-400 pl-2">Serie #${setIdx + 1}</div>
+                            <div class="col-span-4 flex items-center gap-1.5">
+                                <input type="number" value="${setItem.kg}" onchange="updateCoachSet(${exIdx}, ${setIdx}, 'kg', this.value)" class="w-full input-dark rounded-lg px-2.5 py-1 text-center font-mono font-bold">
+                                <span class="text-[10px] text-gray-500 font-mono">KG</span>
+                            </div>
+                            <div class="col-span-4 flex items-center gap-1.5">
+                                <input type="number" value="${setItem.reps}" onchange="updateCoachSet(${exIdx}, ${setIdx}, 'reps', this.value)" class="w-full input-dark rounded-lg px-2.5 py-1 text-center font-mono font-bold">
+                                <span class="text-[10px] text-gray-500 font-mono">REPS</span>
+                            </div>
+                            <div class="col-span-2 text-right pr-1">
+                                <button onclick="removeSetFromExercise(${exIdx}, ${setIdx})" class="text-gray-500 hover:text-red-400 p-1" title="Quitar serie">
+                                    <i class="ph-bold ph-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML += `
+                    <div class="cyber-card rounded-2xl p-5 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+                            <div class="flex items-center gap-2.5 flex-1">
+                                <span class="w-7 h-7 rounded-lg bg-neon/15 border border-neon/40 text-neon font-black text-xs flex items-center justify-center shrink-0">${exIdx + 1}</span>
+                                <input type="text" value="${ex.name}" onchange="updateExerciseField(${exIdx}, 'name', this.value)" class="w-full input-dark rounded-xl px-3 py-1.5 text-sm font-extrabold">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold uppercase text-gray-400">Descanso (seg):</span>
+                                <input type="number" value="${ex.rest}" onchange="updateExerciseField(${exIdx}, 'rest', this.value)" class="w-20 input-dark rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-neon text-center">
+                                <button onclick="addSetToExercise(${exIdx})" class="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-bold text-gray-200">+ Serie</button>
+                                <button onclick="deleteExerciseFromSplit(${exIdx})" class="p-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400" title="Eliminar ejercicio">
+                                    <i class="ph-bold ph-trash text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">${setsHtml}</div>
+                    </div>
+                `;
+            });
+        }
+
+        window.updateActiveSplitTitle = function(val) {
+            STUDENTS_DB[currentStudentId].routines[currentEditingSplit].title = val;
+        };
+
+        window.updateExerciseField = function(exIdx, field, val) {
+            const ex = STUDENTS_DB[currentStudentId].routines[currentEditingSplit].exercises[exIdx];
+            ex[field] = field === 'rest' ? (Number(val) || 60) : val;
+        };
+
+        window.updateCoachSet = function(exIdx, setIdx, field, val) {
+            STUDENTS_DB[currentStudentId].routines[currentEditingSplit].exercises[exIdx].sets[setIdx][field] = Number(val) || 0;
+        };
+
+        window.addSetToExercise = function(exIdx) {
+            const sets = STUDENTS_DB[currentStudentId].routines[currentEditingSplit].exercises[exIdx].sets;
+            const lastSet = sets[sets.length - 1] || { kg: 50, reps: 12 };
+            sets.push({ kg: lastSet.kg, reps: lastSet.reps, done: false });
+            renderSplitEditor();
+        };
+
+        window.removeSetFromExercise = function(exIdx, setIdx) {
+            const sets = STUDENTS_DB[currentStudentId].routines[currentEditingSplit].exercises[exIdx].sets;
+            if (sets.length <= 1) return;
+            sets.splice(setIdx, 1);
+            renderSplitEditor();
+        };
+
+        window.addNewExerciseToSplit = function() {
+            STUDENTS_DB[currentStudentId].routines[currentEditingSplit].exercises.push({
+                id: 'ex_' + Date.now(),
+                name: 'Nuevo Ejercicio Prescrito',
+                rest: 60,
+                sets: [
+                    { kg: 40, reps: 12, done: false },
+                    { kg: 45, reps: 10, done: false },
+                    { kg: 45, reps: 10, done: false }
+                ]
+            });
+            renderSplitEditor();
+            showCoachToast('Ejercicio agregado al Split ' + currentEditingSplit);
+        };
+
+        window.deleteExerciseFromSplit = function(exIdx) {
+            STUDENTS_DB[currentStudentId].routines[currentEditingSplit].exercises.splice(exIdx, 1);
+            renderSplitEditor();
+        };
+
+        // ============================================================================
+        // ACCIONES RÁPIDAS DEL ENTRENADOR
+        // ============================================================================
+        window.setQuickDirective = function(text) {
+            document.getElementById('inpCoachDirective').value = text;
+        };
+
+        window.markFeeAsPaidNow = function() {
+            document.getElementById('inpPaymentStatus').value = 'CUOTA AL DÍA';
+            saveCurrentStudentToCloud();
+        };
+
+        window.switchCoachSection = function(sec) {
+            ['perfil', 'rutinas', 'bioscan', 'pagos', 'prospectos'].forEach(s => {
+                document.getElementById(`coachSec-${s}`).classList.toggle('hidden', s !== sec);
+                const btn = document.getElementById(`tabBtn-${s}`);
+                if (s === sec) {
+                    btn.className = 'coach-nav-btn flex items-center justify-between gap-3 px-3.5 py-3 rounded-xl text-xs font-bold bg-neon text-black shrink-0 transition-all';
+                } else {
+                    btn.className = 'coach-nav-btn flex items-center justify-between gap-3 px-3.5 py-3 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 shrink-0 transition-all';
+                }
+            });
+        };
+
+        window.selectStudent = function(studentId) {
+            collectFormDataIntoStudent();
+            currentStudentId = studentId;
+            loadStudentIntoForm(studentId);
+        };
+
+        window.openNewStudentModal = () => document.getElementById('newStudentModal').classList.remove('hidden');
+        window.closeNewStudentModal = () => document.getElementById('newStudentModal').classList.add('hidden');
+
+        window.createNewStudentProfile = async function() {
+            const name = document.getElementById('newStudName').value.trim();
+            const goal = document.getElementById('newStudGoal').value.trim() || 'Hipertrofia & Fuerza';
+            if (!name) return;
+
+            const newId = 'TF-' + Math.floor(100000 + Math.random() * 900000);
+            STUDENTS_DB[newId] = getDefaultStudentTemplate(newId, name, goal);
+            updateStudentSelectorOptions();
+            document.getElementById('studentSelector').value = newId;
+            currentStudentId = newId;
+            loadStudentIntoForm(newId);
+            closeNewStudentModal();
+            document.getElementById('newStudName').value = '';
+            document.getElementById('newStudGoal').value = '';
+            await saveCurrentStudentToCloud();
+        };
+
+        window.promoteLeadToStudent = async function(name, goal) {
+            const newId = 'TF-' + Math.floor(100000 + Math.random() * 900000);
+            STUDENTS_DB[newId] = getDefaultStudentTemplate(newId, name, goal || 'Hipertrofia & Fuerza');
+            updateStudentSelectorOptions();
+            document.getElementById('studentSelector').value = newId;
+            currentStudentId = newId;
+            loadStudentIntoForm(newId);
+            switchCoachSection('perfil');
+            await saveCurrentStudentToCloud();
+            showCoachToast(`¡${name} fue dado de alta como Alumno!`);
+        };
+
+        function updateStudentSelectorOptions() {
+            const sel = document.getElementById('studentSelector');
+            sel.innerHTML = '';
+            Object.values(STUDENTS_DB).forEach(st => {
+                const opt = document.createElement('option');
+                opt.value = st.id;
+                opt.textContent = `${st.name} (#${st.id})`;
+                sel.appendChild(opt);
+            });
+            sel.value = currentStudentId;
+        }
+
+        window.resetDemoStudent = async function() {
+            STUDENTS_DB["TF-000100"] = getDefaultStudentTemplate("TF-000100", "Alumno Demo", "Hipertrofia & Fuerza");
+            currentStudentId = "TF-000100";
+            loadStudentIntoForm("TF-000100");
+            await saveCurrentStudentToCloud();
+            showCoachToast("Valores de Alumno Demo restaurados");
+        };
+
+        // ============================================================================
+        // GUARDADO Y SINCRONIZACIÓN EN TIEMPO REAL CON FIREBASE FIRESTORE
+        // ============================================================================
+        window.saveCurrentStudentToCloud = async function() {
+            collectFormDataIntoStudent();
+            const s = STUDENTS_DB[currentStudentId];
+            loadStudentIntoForm(currentStudentId);
+            updateStudentSelectorOptions();
+
+            if (isCloudReady && auth.currentUser) {
+                try {
+                    const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', s.id);
+                    const payload = {
+                        ...s,
+                        routinesJson: JSON.stringify(s.routines),
+                        scansJson: JSON.stringify(s.scans),
+                        perimetersJson: JSON.stringify(s.perimeters),
+                        updatedAt: Date.now()
+                    };
+                    // Removemos objetos anidados complejos para máxima compatibilidad con Firestore
+                    delete payload.routines;
+                    delete payload.scans;
+                    delete payload.perimeters;
+
+                    await setDoc(studentDocRef, payload);
+                    showCoachToast(`Sincronizado en vivo con la App de ${s.name}`);
+                } catch (err) {
+                    console.error("Error guardando alumno:", err);
+                    showCoachToast("Guardado en sesión local");
+                }
+            } else {
+                showCoachToast("Cambios aplicados en el perfil del alumno");
+            }
+        };
+
+        function showCoachToast(msg) {
+            const t = document.getElementById('coachToast');
+            document.getElementById('coachToastText').textContent = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 3000);
+        }
+
+        // Inicialización de Firebase + Escucha de Alumnos y Prospectos
+        async function initCoachCloud() {
+            loadStudentIntoForm(currentStudentId);
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                if (!auth.currentUser) return;
+                isCloudReady = true;
+
+                // 1. Escuchar colección de Alumnos
+                const studentsCol = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+                onSnapshot(studentsCol, (snap) => {
+                    snap.forEach(d => {
+                        const data = d.data();
+                        if (data && data.id) {
+                            STUDENTS_DB[data.id] = {
+                                ...data,
+                                routines: data.routinesJson ? JSON.parse(data.routinesJson) : getDefaultStudentTemplate().routines,
+                                scans: data.scansJson ? JSON.parse(data.scansJson) : getDefaultStudentTemplate().scans,
+                                perimeters: data.perimetersJson ? JSON.parse(data.perimetersJson) : getDefaultStudentTemplate().perimeters
+                            };
+                        }
+                    });
+                    updateStudentSelectorOptions();
+                    loadStudentIntoForm(currentStudentId);
+                }, (err) => console.error("Error leyendo alumnos:", err));
+
+                // 2. Escuchar Prospectos de la Landing Page (index.html)
+                const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
+                onSnapshot(leadsCol, (snap) => {
+                    const leads = [];
+                    snap.forEach(d => leads.push({ id: d.id, ...d.data() }));
+                    leads.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    document.getElementById('leadsCountBadge').textContent = leads.length;
+
+                    const tbody = document.getElementById('coachLeadsTableBody');
+                    tbody.innerHTML = '';
+                    if (leads.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-gray-500">Aún no hay prospectos registrados desde index.html.</td></tr>`;
+                        return;
+                    }
+                    leads.forEach(l => {
+                        const safeName = (l.name || 'Nuevo Atleta').replace(/'/g, "");
+                        const safeGoal = (l.goal || 'Hipertrofia').replace(/'/g, "");
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-white/[0.02]">
+                                <td class="py-3.5 px-5 text-gray-400 font-mono">${l.timestamp ? new Date(l.timestamp).toLocaleDateString() : 'Hoy'}</td>
+                                <td class="py-3.5 px-5 font-bold text-white">${l.name}</td>
+                                <td class="py-3.5 px-5 text-gray-300">${l.email}</td>
+                                <td class="py-3.5 px-5 text-neon font-semibold">${l.goal}</td>
+                                <td class="py-3.5 px-5 text-right">
+                                    <button onclick="promoteLeadToStudent('${safeName}', '${safeGoal}')" class="px-3 py-1.5 rounded-xl bg-neon text-black font-black text-[10px] uppercase hover:bg-neonHover transition-all">
+                                        + Convertir en Alumno
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }, (err) => console.error("Error leyendo prospectos:", err));
+
+            } catch (e) {
+                console.error("Modo offline:", e);
+            }
+        }
+
+        initCoachCloud();
+    </script>
+</body>
+</html>
